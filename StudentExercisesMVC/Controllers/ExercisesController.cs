@@ -98,7 +98,14 @@ namespace StudentExercisesMVC.Controllers
 
                     reader.Close();
 
-                    return View(exercise);
+                    if (exercise != null)
+                    {
+                        return View(exercise);
+                    }
+                    else
+                    {
+                        return RedirectToAction(nameof(NotFound));
+                    }
                 }
             }
         }
@@ -112,11 +119,27 @@ namespace StudentExercisesMVC.Controllers
         // POST: ExercisesController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(Exercise exercise)
         {
             try
             {
-                return RedirectToAction(nameof(Index));
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO Exercise
+                                            ( Name, Language )
+                                            VALUES
+                                            ( @name, @language )";
+                        cmd.Parameters.Add(new SqlParameter("@name", exercise.Name));
+                        cmd.Parameters.Add(new SqlParameter("@language", exercise.Language));
+
+                        cmd.ExecuteNonQuery();
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
             }
             catch
             {

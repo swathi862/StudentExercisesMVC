@@ -6,9 +6,12 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Configuration;
 
 using StudentExercisesAPI.Models;
+
+using StudentExercisesMVC.Models.ViewModel;
 
 namespace StudentExercisesMVC.Controllers
 {
@@ -104,7 +107,14 @@ namespace StudentExercisesMVC.Controllers
 
                     reader.Close();
 
-                    return View(student);
+                    if (student != null)
+                    {
+                        return View(student);
+                    }
+                    else
+                    {
+                        return RedirectToAction(nameof(NotFound));
+                    }
                 }
             }
         }
@@ -112,17 +122,72 @@ namespace StudentExercisesMVC.Controllers
         // GET: StudentsController/Create
         public ActionResult Create()
         {
-            return View();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Cohort.Id, Cohort.Name FROM Cohort";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    // Create a new instance of our view model
+                    StudentCohortViewModel viewModel = new StudentCohortViewModel();
+                    while (reader.Read())
+                    {
+                        // Map the raw data to our cohort model
+                        Cohort cohort = new Cohort
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name"))
+                        };
+
+                        // Use the info to build our SelectListItem
+                        SelectListItem cohortOptionTag = new SelectListItem()
+                        {
+                            Text = cohort.Name,
+                            Value = cohort.Id.ToString()
+                        };
+
+                        // Add the select list item to our list of dropdown options
+                        viewModel.cohorts.Add(cohortOptionTag);
+
+                    }
+
+                    reader.Close();
+
+
+                    // send it all to the view
+                    return View(viewModel);
+                }
+            }
         }
 
         // POST: StudentsController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(StudentCohortViewModel viewModel)
         {
             try
             {
-                return RedirectToAction(nameof(Index));
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO Student
+                ( FirstName, LastName, SlackHandle, CohortId )
+                VALUES
+                ( @firstName, @lastName, @slackHandle, @cohortId )";
+                        cmd.Parameters.Add(new SqlParameter("@firstName", viewModel.student.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", viewModel.student.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@slackHandle", viewModel.student.SlackHandle));
+                        cmd.Parameters.Add(new SqlParameter("@cohortId", viewModel.student.CohortId));
+                        cmd.ExecuteNonQuery();
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
             }
             catch
             {

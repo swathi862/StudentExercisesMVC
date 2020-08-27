@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 
 using StudentExercisesAPI.Models;
+using StudentExercisesMVC.Models.ViewModel;
 
 namespace StudentExercisesMVC.Controllers
 {
@@ -109,7 +111,14 @@ namespace StudentExercisesMVC.Controllers
 
                     reader.Close();
 
-                    return View(instructor);
+                    if (instructor != null)
+                    {
+                        return View(instructor);
+                    }
+                    else
+                    {
+                        return RedirectToAction(nameof(NotFound));
+                    }
                 }
             }
         }
@@ -117,17 +126,74 @@ namespace StudentExercisesMVC.Controllers
         // GET: InstructorsController/Create
         public ActionResult Create()
         {
-            return View();
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Cohort.Id, Cohort.Name FROM Cohort";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    // Create a new instance of our view model
+                    InstructorCohortViewModel viewModel = new InstructorCohortViewModel();
+                    while (reader.Read())
+                    {
+                        // Map the raw data to our cohort model
+                        Cohort cohort = new Cohort
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name"))
+                        };
+
+                        // Use the info to build our SelectListItem
+                        SelectListItem cohortOptionTag = new SelectListItem()
+                        {
+                            Text = cohort.Name,
+                            Value = cohort.Id.ToString()
+                        };
+
+                        // Add the select list item to our list of dropdown options
+                        viewModel.cohorts.Add(cohortOptionTag);
+
+                    }
+
+                    reader.Close();
+
+
+                    // send it all to the view
+                    return View(viewModel);
+                }
+            }
         }
 
         // POST: InstructorsController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(InstructorCohortViewModel viewModel)
         {
             try
             {
-                return RedirectToAction(nameof(Index));
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO Instructor
+                ( FirstName, LastName, SlackHandle, CohortId, Speciality )
+                VALUES
+                ( @firstName, @lastName, @slackHandle, @cohortId, @speciality )";
+                        cmd.Parameters.Add(new SqlParameter("@firstName", viewModel.instructor.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", viewModel.instructor.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@slackHandle", viewModel.instructor.SlackHandle));
+                        cmd.Parameters.Add(new SqlParameter("@cohortId", viewModel.instructor.CohortId));
+                        cmd.Parameters.Add(new SqlParameter("@speciality", viewModel.instructor.Specialty));
+
+                        cmd.ExecuteNonQuery();
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
             }
             catch
             {
@@ -181,6 +247,43 @@ namespace StudentExercisesMVC.Controllers
                         return RedirectToAction(nameof(NotFound));
                     }
                 }
+
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Cohort.Id, Cohort.Name FROM Cohort";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    // Create a new instance of our view model
+                    InstructorCohortViewModel viewModel = new InstructorCohortViewModel();
+                    while (reader.Read())
+                    {
+                        // Map the raw data to our cohort model
+                        Cohort cohort = new Cohort
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name"))
+                        };
+
+                        // Use the info to build our SelectListItem
+                        SelectListItem cohortOptionTag = new SelectListItem()
+                        {
+                            Text = cohort.Name,
+                            Value = cohort.Id.ToString()
+                        };
+
+                        // Add the select list item to our list of dropdown options
+                        viewModel.cohorts.Add(cohortOptionTag);
+
+                    }
+
+                    reader.Close();
+
+
+                    // send it all to the view
+                    return View(viewModel);
+                }
+
             }
         }
 

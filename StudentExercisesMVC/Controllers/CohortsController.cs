@@ -94,7 +94,14 @@ namespace StudentExercisesMVC.Controllers
 
                     reader.Close();
 
-                    return View(cohort);
+                    if (cohort != null)
+                    {
+                        return View(cohort);
+                    }
+                    else
+                    {
+                        return RedirectToAction(nameof(NotFound));
+                    }
                 }
             }
         }
@@ -108,11 +115,26 @@ namespace StudentExercisesMVC.Controllers
         // POST: CohortsController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(Cohort cohort)
         {
             try
             {
-                return RedirectToAction(nameof(Index));
+                using (SqlConnection conn = Connection)
+                {
+                    conn.Open();
+                    using (SqlCommand cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = @"INSERT INTO Cohort
+                                            ( Name )
+                                            VALUES
+                                            ( @name )";
+                        cmd.Parameters.Add(new SqlParameter("@name", cohort.Name));
+
+                        cmd.ExecuteNonQuery();
+
+                        return RedirectToAction(nameof(Index));
+                    }
+                }
             }
             catch
             {
