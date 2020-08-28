@@ -204,6 +204,7 @@ namespace StudentExercisesMVC.Controllers
         // GET: InstructorsController/Edit/5
         public ActionResult Edit(int id)
         {
+            InstructorCohortViewModel viewModel = new InstructorCohortViewModel();
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
@@ -221,11 +222,11 @@ namespace StudentExercisesMVC.Controllers
                     cmd.Parameters.Add(new SqlParameter("@id", id));
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    Instructor instructor = null;
+                    viewModel.instructor = null;
 
                     if (reader.Read())
                     {
-                        instructor = new Instructor
+                        viewModel.instructor = new Instructor
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
@@ -235,17 +236,7 @@ namespace StudentExercisesMVC.Controllers
                             Specialty = reader.GetString(reader.GetOrdinal("Speciality"))
                         };
                     }
-
                     reader.Close();
-
-                    if (instructor != null)
-                    {
-                        return View(instructor);
-                    }
-                    else
-                    {
-                        return RedirectToAction(nameof(NotFound));
-                    }
                 }
 
                 using (SqlCommand cmd = conn.CreateCommand())
@@ -254,43 +245,42 @@ namespace StudentExercisesMVC.Controllers
 
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    // Create a new instance of our view model
-                    InstructorCohortViewModel viewModel = new InstructorCohortViewModel();
                     while (reader.Read())
                     {
-                        // Map the raw data to our cohort model
                         Cohort cohort = new Cohort
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             Name = reader.GetString(reader.GetOrdinal("Name"))
                         };
 
-                        // Use the info to build our SelectListItem
                         SelectListItem cohortOptionTag = new SelectListItem()
                         {
                             Text = cohort.Name,
                             Value = cohort.Id.ToString()
                         };
 
-                        // Add the select list item to our list of dropdown options
                         viewModel.cohorts.Add(cohortOptionTag);
 
                     }
 
                     reader.Close();
-
-
-                    // send it all to the view
-                    return View(viewModel);
                 }
 
+                if (viewModel.instructor != null)
+                {
+                    return View(viewModel);
+                }
+                else
+                {
+                    return RedirectToAction(nameof(NotFound));
+                }
             }
         }
 
         // POST: InstructorsController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, Instructor instructor)
+        public ActionResult Edit(int id, InstructorCohortViewModel viewModel)
         {
             try
             {
@@ -306,11 +296,11 @@ namespace StudentExercisesMVC.Controllers
                                                 CohortId = @cohortId,
                                                 Speciality = @speciality
                                             WHERE Id = @id";
-                        cmd.Parameters.Add(new SqlParameter("@firstName", instructor.FirstName));
-                        cmd.Parameters.Add(new SqlParameter("@lastName", instructor.LastName));
-                        cmd.Parameters.Add(new SqlParameter("@slack", instructor.SlackHandle));
-                        cmd.Parameters.Add(new SqlParameter("@cohortId", instructor.CohortId));
-                        cmd.Parameters.Add(new SqlParameter("@speciality", instructor.Specialty));
+                        cmd.Parameters.Add(new SqlParameter("@firstName", viewModel.instructor.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", viewModel.instructor.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@slack", viewModel.instructor.SlackHandle));
+                        cmd.Parameters.Add(new SqlParameter("@cohortId", viewModel.instructor.CohortId));
+                        cmd.Parameters.Add(new SqlParameter("@speciality", viewModel.instructor.Specialty));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
@@ -320,7 +310,7 @@ namespace StudentExercisesMVC.Controllers
             }
             catch
             {
-                return View(instructor);
+                return View(viewModel.instructor);
             }
 
         }

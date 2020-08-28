@@ -198,6 +198,7 @@ namespace StudentExercisesMVC.Controllers
         // GET: StudentsController/Edit/5
         public ActionResult Edit(int id)
         {
+            StudentCohortViewModel viewModel = new StudentCohortViewModel();
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
@@ -214,11 +215,11 @@ namespace StudentExercisesMVC.Controllers
                     cmd.Parameters.Add(new SqlParameter("@id", id));
                     SqlDataReader reader = cmd.ExecuteReader();
 
-                    Student student = null;
+                    viewModel.student = null;
 
                     if (reader.Read())
                     {
-                        student = new Student
+                        viewModel.student = new Student
                         {
                             Id = reader.GetInt32(reader.GetOrdinal("Id")),
                             FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
@@ -230,14 +231,41 @@ namespace StudentExercisesMVC.Controllers
 
                     reader.Close();
 
-                    if (student != null)
+                }
+
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"SELECT Cohort.Id, Cohort.Name FROM Cohort";
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
                     {
-                        return View(student);
+                        Cohort cohort = new Cohort
+                        {
+                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Name = reader.GetString(reader.GetOrdinal("Name"))
+                        };
+
+                        SelectListItem cohortOptionTag = new SelectListItem()
+                        {
+                            Text = cohort.Name,
+                            Value = cohort.Id.ToString()
+                        };
+
+                        viewModel.cohorts.Add(cohortOptionTag);
                     }
-                    else
-                    {
-                        return RedirectToAction(nameof(NotFound));
-                    }
+
+                    reader.Close();
+                }
+
+                if (viewModel.student != null)
+                {
+                    return View(viewModel);
+                }
+                else
+                {
+                    return RedirectToAction(nameof(NotFound));
                 }
             }
         }
@@ -245,7 +273,7 @@ namespace StudentExercisesMVC.Controllers
         // POST: StudentsController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, Student student)
+        public ActionResult Edit(int id, StudentCohortViewModel viewModel)
         {
             try
             {
@@ -261,10 +289,10 @@ namespace StudentExercisesMVC.Controllers
                                             slackHandle=@slackHandle, 
                                             cohortId=@cohortId
                                             WHERE Id = @id";
-                        cmd.Parameters.Add(new SqlParameter("@firstName", student.FirstName));
-                        cmd.Parameters.Add(new SqlParameter("@lastName", student.LastName));
-                        cmd.Parameters.Add(new SqlParameter("@slackHandle", student.SlackHandle));
-                        cmd.Parameters.Add(new SqlParameter("@cohortId", student.CohortId));
+                        cmd.Parameters.Add(new SqlParameter("@firstName", viewModel.student.FirstName));
+                        cmd.Parameters.Add(new SqlParameter("@lastName", viewModel.student.LastName));
+                        cmd.Parameters.Add(new SqlParameter("@slackHandle", viewModel.student.SlackHandle));
+                        cmd.Parameters.Add(new SqlParameter("@cohortId", viewModel.student.CohortId));
                         cmd.Parameters.Add(new SqlParameter("@id", id));
 
                         int rowsAffected = cmd.ExecuteNonQuery();
@@ -276,7 +304,7 @@ namespace StudentExercisesMVC.Controllers
             }
             catch
             {
-                return View(student);
+                return View(viewModel.student);
             }
         }
 
