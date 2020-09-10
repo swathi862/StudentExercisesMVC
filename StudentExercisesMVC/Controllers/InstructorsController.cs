@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 
-using StudentExercisesAPI.Models;
+using StudentExercisesMVC.Models;
 using StudentExercisesMVC.Models.ViewModel;
 
 namespace StudentExercisesMVC.Controllers

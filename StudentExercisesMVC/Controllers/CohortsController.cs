@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
-using StudentExercisesAPI.Models;
+using StudentExercisesMVC.Models;
 
 namespace StudentExercisesMVC.Controllers
 {
@@ -38,22 +38,71 @@ namespace StudentExercisesMVC.Controllers
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
                     cmd.CommandText = @"
-                                        SELECT c.Id,
-                                            c.Name
-                                        FROM Cohort c
+                                        SELECT c.Id AS CohortID, c.Name, 
+                                               s.Id AS StudentID, i.Id AS InstructorID
+                                        FROM Cohort c LEFT JOIN Student s ON c.Id = s.CohortId LEFT JOIN Instructor i ON c.Id = i.CohortId
                                     ";
                     SqlDataReader reader = cmd.ExecuteReader();
 
                     List<Cohort> cohorts = new List<Cohort>();
+
                     while (reader.Read())
                     {
                         Cohort cohort = new Cohort
                         {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                            Id = reader.GetInt32(reader.GetOrdinal("CohortID")),
                             Name = reader.GetString(reader.GetOrdinal("Name"))
                         };
 
-                        cohorts.Add(cohort);
+
+
+                        if (cohorts.Any(c => c.Id == cohort.Id) == false)
+                        {
+                            if (cohort.listOfStudents.Any(stud => stud.Id == reader.GetInt32(reader.GetOrdinal("StudentID"))) == false && !reader.IsDBNull(reader.GetOrdinal("StudentID")))
+                            {
+                                Student student = new Student
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("StudentID"))
+                                };
+
+                                cohort.listOfStudents.Add(student);
+                            }
+
+                            if (cohort.listOfInstructors.Any(i => i.Id == reader.GetInt32(reader.GetOrdinal("InstructorID"))) == false && !reader.IsDBNull(reader.GetOrdinal("InstructorID")))
+                            {
+                                Instructor instructor = new Instructor
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("InstructorID"))
+                                };
+
+                                cohort.listOfInstructors.Add(instructor);
+                            }
+
+                            cohorts.Add(cohort);
+                        }
+                        else
+                        {
+                            if (cohorts.FirstOrDefault(c => c.Id == cohort.Id).listOfStudents.Any(stud => stud.Id == reader.GetInt32(reader.GetOrdinal("StudentID"))) == false && !reader.IsDBNull(reader.GetOrdinal("StudentID")))
+                            {
+                                Student student = new Student
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("StudentID"))
+                                };
+
+                                cohorts.FirstOrDefault(c => c.Id == cohort.Id).listOfStudents.Add(student);
+
+                            }
+
+                            if (cohorts.FirstOrDefault(c => c.Id == cohort.Id).listOfInstructors.Any(i => i.Id == reader.GetInt32(reader.GetOrdinal("InstructorID"))) == false && !reader.IsDBNull(reader.GetOrdinal("InstructorID")))
+                            {
+                                Instructor instructor = new Instructor
+                                {
+                                    Id = reader.GetInt32(reader.GetOrdinal("InstructorID")),
+                                };
+
+                                cohorts.FirstOrDefault(c => c.Id == cohort.Id).listOfInstructors.Add(instructor);
+                            }
+                        }
                     }
 
                     reader.Close();

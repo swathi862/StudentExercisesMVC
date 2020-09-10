@@ -1,4 +1,4 @@
-﻿@model IEnumerable<StudentExercisesAPI.Models.Cohort>
+﻿@model IEnumerable<StudentExercisesMVC.Models.Cohort>
 
 @{
     ViewData["Title"] = "Index";
@@ -13,10 +13,13 @@
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.Id)
+                @Html.DisplayNameFor(model => model.Name)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Name)
+                # of Instructors
+            </th>
+            <th>
+                # of Students
             </th>
             <th></th>
         </tr>
@@ -25,10 +28,13 @@
 @foreach (var item in Model) {
         <tr>
             <td>
-                @Html.DisplayFor(modelItem => item.Id)
+                @Html.DisplayFor(modelItem => item.Name)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.Name)
+                @Html.DisplayFor(modelItem => item.listOfInstructors.Count)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.listOfStudents.Count)
             </td>
             <td>
                 <div class="badge badge-pill badge-success">

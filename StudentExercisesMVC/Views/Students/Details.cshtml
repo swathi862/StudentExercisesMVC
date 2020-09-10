@@ -1,4 +1,4 @@
-﻿@model StudentExercisesAPI.Models.Student
+﻿@model StudentExercisesMVC.Models.Student
 
 @{
     ViewData["Title"] = "Details";
@@ -20,7 +20,18 @@
             @Html.DisplayNameFor(model => model.CohortId)
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.CohortId)
+            @Html.DisplayFor(model => model.CohortId) | @Model.Cohort.Name
+        </dd>
+        <dt class = "col-sm-2">
+            Assigned Exercises
+        </dt>
+        <dd class = "col-sm-10">
+            <ul>
+                @foreach (var exercise in @Model.assignedExercises)
+                {
+                    <li>@Html.DisplayFor(student => exercise.Name) | @exercise.Language</li>
+                }
+            </ul> 
         </dd>
     </dl>
 </div>
